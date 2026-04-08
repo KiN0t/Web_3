@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('title', 'Administration')
-@section('content')
+@section('content') //Créé une section qui sera appelé par un yield dans un layout, ici le layout app.blade.php. Le titre de la page est défini à "Administration". 
 <section style="max-width:1000px;width:100%;">
     <h2>Administration</h2>
 
@@ -83,3 +83,42 @@
     @endforeach
 </section>
 @endsection
+
+@push('scripts') //Mets le script dans une pile de scripts qui sera appelé par un stack dans le layout, ici app.blade.php. Cela permet d'ajouter des scripts spécifiques à certaines pages sans les inclure dans le layout global.
+<script>
+    // Récupère le token Sanctum depuis la session Laravel
+    const API_TOKEN = '{{ auth()->user()->currentAccessToken()?->token ?? "" }}';
+
+    // Fonction pour charger les tickets via l'API
+    async function loadTicketsFromApi() {
+        try {
+            const response = await fetch('/api/tickets', { //Requete http
+                headers: {
+                    'Authorization': 'Bearer ' + API_TOKEN,
+                    'Accept': 'application/json', //Reponse en JSON
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content //Portection CSRF pour les requetes POST/PUT/PATCH/DELETE
+                }
+            });
+            const tickets = await response.json(); //Convertit la reponse en JSON
+            console.log('Tickets depuis API:', tickets);
+        } catch (error) {
+            console.error('Erreur API:', error);
+        }
+    }
+
+    // Fonction pour créer un ticket via l'API sans rechargement
+    async function createTicketApi(data) { //Vive l'async
+        const response = await fetch('/api/tickets', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + API_TOKEN,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify(data)
+        });
+        return await response.json();
+    }
+</script>
+@endpush

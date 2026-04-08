@@ -2,9 +2,10 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">  <!-- Assure que la page est responsive et s'adapte à tous les types d'écrans, notamment les mobiles. -->
     <title>@yield('title', 'Site de Ticketing')</title>
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}"> <!-- Inclus un token CSRF pour sécuriser les formulaires contre les attaques de type Cross-Site Request Forgery. Ce token doit être inclus dans tous les formulaires POST pour que Laravel puisse vérifier leur légitimité. -->
 </head>
 <body>
     <header>
@@ -42,7 +43,7 @@
                 {{ session('success') }}
             </div>
         @endif
-        @yield('content')
+        @yield('content') <!-- Yield appelle la section content qui est définie dans les vues enfants, comme ici dans index.blade.php ou dashboard.blade.php. C'est là que le contenu spécifique à chaque page sera affiché. -->
     </main>
 
     <footer>
@@ -50,9 +51,10 @@
     </footer>
 
     <script>
-        function toggleMenu() {
+        function toggleMenu() { <!-- Fonction pour basculer l'affichage du menu de navigation sur les petits écrans -->
             document.getElementById('nav-menu').classList.toggle('show');
         }
     </script>
+    @stack('scripts')
 </body>
 </html>

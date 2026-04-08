@@ -12,6 +12,11 @@ class TicketController extends Controller
     {
         $user = auth()->user();
 
+        if (!session('api_token')) {
+            $token = $user->createToken('web-session')->plainTextToken;
+            session(['api_token' => $token]);
+        }
+
         if ($user->role === 'admin') {
             $tickets = Ticket::with('projet')->get();
         } elseif ($user->role === 'collaborateur') {
