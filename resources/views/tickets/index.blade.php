@@ -96,7 +96,7 @@
             return;
         }
 
-        const response = await fetch('/api/tickets', {
+        const response = await fetch('/api/tickets', { <!--Attends la réponse de la requete fetch avant de continuer l exécution du code -->
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
