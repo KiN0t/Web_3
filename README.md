@@ -1,59 +1,163 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🎫 Site de Ticketing — README
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Application de gestion de tickets et projets développée avec **Laravel 12**, **Breeze** (auth), **Sanctum** (API) et **SQLite**.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 🚀 Lancer le projet
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+```bash
+# Installer les dépendances
+composer install
+npm install
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+# Créer la base de données et insérer les données de test
+php artisan migrate:fresh --seed
 
-## Learning Laravel
+# Dans deux terminaux séparés :
+php artisan serve     # → http://localhost:8000
+npm run dev           # → compile le CSS/JS (optionnel si tu utilises style.css direct)
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+**Compte de test :**
+- Email : `admin@admin.com`
+- Mot de passe : `password`
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-## Laravel Sponsors
+## 🗂️ Architecture du projet
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```
+app-web-trois/
+│
+├── app/                          ← Logique PHP de l'application
+│   ├── Http/
+│   │   ├── Controllers/          ← CONTROLLERS : reçoivent les requêtes, interrogent les modèles, renvoient les vues
+│   │   │   ├── PageController.php          → Pages générales (home, dashboard, profil, inscription)
+│   │   │   ├── ProjetController.php        → CRUD des projets (liste, créer, modifier, supprimer)
+│   │   │   ├── TicketController.php        → CRUD des tickets + génération du token API
+│   │   │   ├── TempsPasseController.php    → Ajout/suppression de temps passé sur un ticket
+│   │   │   ├── AdminController.php         → Gestion des users, rôles, collaborateurs (panel admin)
+│   │   │   └── Api/                        ← CONTROLLERS API : retournent du JSON (pas du HTML)
+│   │   │       ├── AuthApiController.php   → Login/logout/forgot-password via API
+│   │   │       └── TicketApiController.php → GET et POST tickets via API (consommé par le JS)
+│   │   └── Middleware/
+│   │       └── CheckRole.php     ← MIDDLEWARE : bloque l'accès aux routes selon le rôle (admin/collaborateur/client)
+│   │
+│   └── Models/                   ← MODÈLES : représentent les tables DB et leurs relations
+│       ├── User.php              → Table users — relations : projets, tickets, projetsCollaborateur
+│       ├── Projet.php            → Table projets — relations : tickets, collaborateurs, user
+│       ├── Ticket.php            → Table tickets — relations : projet, tempsPasses, user — calculs : heuresRestantes, heuresFacturables
+│       └── TempsPasse.php        → Table temps_passes — relations : ticket, user
+│
+├── database/
+│   ├── migrations/               ← MIGRATIONS : définissent la structure des tables SQL
+│   │   ├── create_users_table              → id, name, email, password, role
+│   │   ├── create_projets_table            → id, nom, client, statut, budget_heures, user_id
+│   │   ├── create_tickets_table            → id, titre, statut, priorite, heures_estimees, facturable, projet_id, user_id
+│   │   ├── create_temps_passes_table       → id, heures, commentaire, date, ticket_id, user_id
+│   │   ├── create_projet_collaborateurs_table → liaison many-to-many projets ↔ users
+│   │   └── add_role_to_users_table         → ajout colonne role sur users
+│   │
+│   └── seeders/
+│       └── DatabaseSeeder.php    ← SEEDER : insère les données de test (1 admin, 3 projets, 9 tickets, 18 temps passés)
+│
+├── resources/
+│   └── views/                    ← VUES BLADE : le HTML affiché à l'utilisateur
+│       ├── layouts/
+│       │   └── app.blade.php     → Template principal : header, nav, footer — toutes les pages l'étendent avec @extends
+│       ├── projets/
+│       │   ├── index.blade.php   → Liste des projets
+│       │   ├── show.blade.php    → Détail d'un projet + ses tickets
+│       │   ├── create.blade.php  → Formulaire création projet
+│       │   └── edit.blade.php    → Formulaire modification projet
+│       ├── tickets/
+│       │   ├── index.blade.php   → Liste des tickets + formulaire ajout rapide via API (fetch JS)
+│       │   ├── show.blade.php    → Détail ticket + stats heures + gestion temps passé
+│       │   ├── create.blade.php  → Formulaire création ticket
+│       │   └── edit.blade.php    → Formulaire modification ticket
+│       ├── admin/
+│       │   └── index.blade.php   → Panel admin : gestion users, rôles, collaborateurs par projet
+│       ├── dashboard.blade.php   → Tableau de bord avec stats réelles selon le rôle
+│       ├── home.blade.php        → Page d'accueil publique
+│       ├── login.blade.php       → Page de connexion (Breeze)
+│       ├── signup.blade.php      → Inscription
+│       └── forgot-password.blade.php → Mot de passe oublié
+│
+├── routes/
+│   ├── web.php                   ← ROUTES WEB : URLs → Controllers (retournent du HTML)
+│   └── api.php                   ← ROUTES API : URLs /api/... → Controllers API (retournent du JSON)
+│
+└── public/
+    └── css/
+        └── style.css             ← CSS global du site
+```
 
-### Premium Partners
+---
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## 🗄️ Base de données
 
-## Contributing
+### Tables et relations
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```
+users ──────────────────────────────────────────────────────────┐
+  id, name, email, password, role (admin/collaborateur/client)  │
+  │                                                              │
+  │ hasMany                                                      │
+  ▼                                                              │
+projets ────────────────────────────────────────────────────────┤
+  id, nom, client, statut, budget_heures, user_id               │
+  │                                                              │
+  │ hasMany                           belongsToMany (via projet_collaborateurs)
+  ▼                                                              │
+tickets ◄───────────────────────────────────────────────────────┘
+  id, titre, statut, priorite, heures_estimees, facturable, projet_id, user_id
+  │
+  │ hasMany
+  ▼
+temps_passes
+  id, heures, commentaire, date, ticket_id, user_id
+```
 
-## Code of Conduct
+### Commandes utiles
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+php artisan migrate:fresh --seed   # Recrée toutes les tables + données de test
+php artisan tinker                 # Console interactive pour tester des requêtes Eloquent
+php artisan route:list             # Liste toutes les routes disponibles
+```
 
-## Security Vulnerabilities
+---
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## 👥 Rôles utilisateurs
 
-## License
+| Rôle | Accès projets | Accès tickets | Panel admin |
+|------|--------------|---------------|-------------|
+| **Admin** | Tout voir, créer, modifier, supprimer | Tout voir, créer, modifier, supprimer | ✅ Oui |
+| **Collaborateur** | Voir uniquement ses projets liés | Créer/modifier sur ses projets, pas supprimer | ❌ Non |
+| **Client** | Créer et voir ses propres projets | Voir seulement | ❌ Non |
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Le middleware `CheckRole` bloque les routes selon le rôle. Il est appliqué dans `routes/web.php` via `Route::middleware('role:admin')`.
+
+---
+
+## 🌐 API REST
+
+L'API utilise **Sanctum** pour l'authentification par token.
+
+### Endpoints disponibles
+
+| Méthode | URL | Description | Auth |
+|---------|-----|-------------|------|
+| POST | `/api/login` | Connexion, retourne un token | ❌ |
+| POST | `/api/logout` | Déconnexion, supprime le token | ✅ |
+| POST | `/api/forgot-password` | Simule l'envoi d'un email | ❌ |
+| GET | `/api/tickets` | Liste les tickets selon le rôle | ✅ |
+| POST | `/api/tickets` | Crée un ticket | ✅ |
+| GET | `/api/tickets/{id}` | Détail d'un ticket | ✅ |
+
+
+---
+
+
+
